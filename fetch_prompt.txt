@@ -1,0 +1,71 @@
+Do exactly these steps, in order, then print the token SNAPSHOT_OK on its own line as the very last line of output. Print NOTHING else outside the one JSON object and that final token - no prose, no markdown fences, no explanation.
+
+1. Call mcp__claude_ai_Campfire__get_approvals with status="pending" (no object_type filter). This returns {count, results}.
+
+2. Call mcp__claude_ai_NetSuite__ns_runCustomSuiteQL with sqlQuery:
+   SELECT id, tranId, memo, createdDate, BUILTIN.DF(createdBy) AS created_by_name, debitTotal FROM journalentry WHERE approved = 'F'
+   (BUILTIN.DF resolves the internal id to a real display name - do not use the raw createdBy id in the output.)
+
+3. Call mcp__claude_ai_Ramp__ramp_get_bills_for_approval (rationale: "populating a personal approvals widget"). For each bill returned, call mcp__claude_ai_Ramp__ramp_get_bill_details with that bill's id to get its real created_date and bill_url (the list call's created_date/bill_url fields are unreliable/null - always use the details call's values instead).
+
+4. Call mcp__claude_ai_Ramp__ramp_get_reimbursements_for_approval (rationale: "populating a personal approvals widget"). Also call mcp__claude_ai_Ramp__ramp_search_reimbursements with reimbursement_status="PENDING" and page_size=25 (rationale: "need the reimbursement_link field for each pending reimbursement") and match rows by uuid/id to pick up each one's "reimbursement_link".
+
+5. Build a JSON object with this exact shape and print it to stdout:
+
+{
+  "generated_at": "<the CURRENT precise UTC wall-clock time in ISO8601, including hour:minute:second - NOT midnight, NOT a placeholder. Run the Bash tool command: date -u +%Y-%m-%dT%H:%M:%SZ and use its exact output>",
+  "items": [
+    {
+      "source": "campfire",
+      "id": "<the approval's id, as a string>",
+      "title": "<best human label you can build from the draft payload: prefer a vendor/description/name field inside the payload if present, otherwise use \"<object_type> #<object_id>\">",
+      "amount": <a number if the payload has a clear dollar amount field (e.g. total, amount), else null>,
+      "currency": "USD",
+      "created_at": "<the approval's created_at field, as ISO8601>",
+      "detail": "<created_by_name if present in the record, else empty string>",
+      "url": null
+    }
+  ]
+}
+
+Then append one object per row from step 2, shaped like:
+
+    {
+      "source": "netsuite_je",
+      "id": "<id, as a string>",
+      "title": "<tranId>: <memo>",
+      "amount": <debitTotal, as a number>,
+      "currency": "USD",
+      "created_at": "<createdDate, normalized to an ISO8601 date-time in UTC, e.g. if createdDate is '9/21/2026' use '2026-09-21T00:00:00Z'>",
+      "detail": "created by <created_by_name>",
+      "url": "https://system.netsuite.com/app/accounting/transactions/journal.nl?id=<id>&whence="
+    }
+
+Then append one object per bill from step 3, shaped like:
+
+    {
+      "source": "ramp_bill",
+      "id": "<bill id>",
+      "title": "<vendor_name>: <invoice_number>",
+      "amount": <amount, as a number>,
+      "currency": "<currency, default USD>",
+      "created_at": "<the bill_details call's created_date, as ISO8601>",
+      "detail": "<memo, truncated to ~80 chars if long>",
+      "url": "<the bill_details call's bill_url>"
+    }
+
+Then append one object per reimbursement from step 4, shaped like:
+
+    {
+      "source": "ramp_reimbursement",
+      "id": "<reimbursement id>",
+      "title": "<merchant_name>: <memo>",
+      "amount": <amount, as a number>,
+      "currency": "<currency, default USD>",
+      "created_at": "<created_at from ramp_get_reimbursements_for_approval, as ISO8601>",
+      "detail": "<user_name> - <assessment.recommended_action if present, else empty>",
+      "url": "<the matching reimbursement_link from ramp_search_reimbursements, or null if no match found>"
+    }
+
+If any tool call returns zero results, include zero items from that source but still include items from the other sources - do not fail out.
+If any tool call itself errors (not just empty), still print your best-effort JSON with whatever succeeded, but add a top-level "errors" array of strings describing what failed, e.g. "errors": ["ramp: <error text>"]. Never fabricate data to fill in for a failure.

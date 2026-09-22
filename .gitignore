@@ -1,0 +1,15 @@
+# Live data / secrets-adjacent - never commit actual approval contents
+state.json
+.last_success
+.lock/
+refresh.log
+launchd.out.log
+launchd.err.log
+
+# Build artifacts - regenerated per machine by install.sh/build_app.sh
+MenuBarApp/.build/
+MenuBarApp/.swiftpm/
+ApprovalsWidget.app/
+
+# macOS
+.DS_Store

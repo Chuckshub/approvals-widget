@@ -27,10 +27,9 @@ struct ApprovalItem: Codable, Identifiable {
 
     var sourceLabel: String {
         switch source {
-        case "campfire": return "Campfire"
+        case "campfire_invoice", "campfire_bill", "campfire_draft", "campfire": return "Campfire"
         case "netsuite_je": return "NetSuite"
-        case "ramp_bill": return "Ramp"
-        case "ramp_reimbursement": return "Ramp"
+        case "ramp_bill", "ramp_reimbursement": return "Ramp"
         default: return source.capitalized
         }
     }
@@ -38,7 +37,7 @@ struct ApprovalItem: Codable, Identifiable {
     /// Coarser grouping used for the tab filter (NetSuite / Ramp / Campfire).
     var group: String {
         switch source {
-        case "campfire": return "Campfire"
+        case "campfire_invoice", "campfire_bill", "campfire_draft", "campfire": return "Campfire"
         case "netsuite_je": return "NetSuite"
         case "ramp_bill", "ramp_reimbursement": return "Ramp"
         default: return "Other"
@@ -50,7 +49,9 @@ struct ApprovalItem: Codable, Identifiable {
         case "ramp_bill": return "Bill"
         case "ramp_reimbursement": return "Reimbursement"
         case "netsuite_je": return "Journal Entry"
-        case "campfire": return "Draft"
+        case "campfire_invoice": return "Invoice"
+        case "campfire_bill": return "Bill"
+        case "campfire_draft", "campfire": return "Draft"
         default: return source
         }
     }

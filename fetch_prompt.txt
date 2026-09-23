@@ -15,18 +15,29 @@ Do exactly these steps, in order, then print the token SNAPSHOT_OK on its own li
 {
   "generated_at": "<the CURRENT precise UTC wall-clock time in ISO8601, including hour:minute:second - NOT midnight, NOT a placeholder. Run the Bash tool command: date -u +%Y-%m-%dT%H:%M:%SZ and use its exact output>",
   "items": [
-    {
-      "source": "campfire",
-      "id": "<the approval's id, as a string>",
-      "title": "<best human label you can build from the draft payload: prefer a vendor/description/name field inside the payload if present, otherwise use \"<object_type> #<object_id>\">",
-      "amount": <a number if the payload has a clear dollar amount field (e.g. total, amount), else null>,
-      "currency": "USD",
-      "created_at": "<the approval's created_at field, as ISO8601>",
-      "detail": "<created_by_name if present in the record, else empty string>",
-      "url": null
-    }
   ]
 }
+
+For each row from step 1, use its "model" field to pick the shape:
+
+- model == "accountinginvoice": read the fields from new_payload (not old_payload - old_payload is null on a new/add operation). Emit:
+    {
+      "source": "campfire_invoice",
+      "id": "<the approval's top-level id, as a string>",
+      "title": "Invoice <new_payload.invoice_number>: <new_payload.client_name>",
+      "amount": <sum of new_payload.lines[].amount, DIVIDED BY 100 (line amounts are in cents) - do not use a per-line "amount" as-is>,
+      "currency": "<new_payload.currency, default USD>",
+      "created_at": "<the approval's created_at, as ISO8601>",
+      "detail": "created by <created_by_name> - due <new_payload.due_date>",
+      "url": null
+    }
+  (there is no reliable Campfire deep-link URL for a still-pending draft - leave url null.)
+
+- model == "accountingbill": emit similarly but source "campfire_bill", title "Bill <new_payload.invoice_number or vendor_name>: <new_payload.vendor_name or client_name>", amount from new_payload.total or summed line amounts (check whether it's already in dollars or cents by comparing magnitude to a sane bill size - Campfire bill payloads are NOT guaranteed to use cents like invoice lines do, so sanity-check before dividing).
+
+- any other model: emit source "campfire_draft", title "<model> #<object_id or id>", amount null unless a top-level total/amount field is obviously in dollars, detail "created by <created_by_name>", url null.
+
+If step 1 returns zero results, emit zero campfire_* items - do not fail out.
 
 Then append one object per row from step 2, shaped like:
 

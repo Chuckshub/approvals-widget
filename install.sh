@@ -77,6 +77,22 @@ launchctl unload -w "$PLIST" >/dev/null 2>&1 || true
 launchctl load -w "$PLIST"
 
 echo ""
+echo "==> Adding ApprovalsWidget.app to Login Items"
+APP_PATH="$HERE/ApprovalsWidget.app"
+ALREADY=$(osascript -e 'tell application "System Events" to get the name of every login item' 2>/dev/null | grep -c "ApprovalsWidget" || true)
+if [[ "$ALREADY" -eq 0 ]]; then
+  osascript -e "tell application \"System Events\" to make login item at end with properties {path:\"$APP_PATH\", hidden:false}" \
+    && echo "    added." \
+    || echo "    could not add automatically (System Events may need Automation permission for Terminal - System Settings > Privacy & Security > Automation). Add it manually: System Settings > General > Login Items > + > select $APP_PATH"
+else
+  echo "    already present, skipping."
+fi
+
+echo ""
+echo "==> Launching it now"
+open "$APP_PATH"
+
+echo ""
 echo "==> Done."
 echo ""
 echo "Next steps:"
@@ -84,8 +100,5 @@ echo "  1. In a terminal, run 'claude' then '/mcp' and connect Campfire, NetSuit
 echo "     (each person authorizes their OWN connection - see README.md for what's"
 echo "     personal vs org-wide per source)."
 echo "  2. First data fetch: ./ctl.sh run"
-echo "  3. Open the widget:  open ApprovalsWidget.app"
-echo "  4. Add it to Login Items: System Settings > General > Login Items > +"
-echo "     and select $HERE/ApprovalsWidget.app"
 echo ""
 echo "Check status any time with: ./ctl.sh status"

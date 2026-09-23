@@ -21,7 +21,9 @@ private enum Glass {
         case "netsuite_je": return Color(red: 0.35, green: 0.55, blue: 1.0)
         case "ramp_bill": return Color(red: 0.30, green: 0.78, blue: 0.75)       // teal
         case "ramp_reimbursement": return Color(red: 0.68, green: 0.55, blue: 1.0) // violet
-        case "campfire": return Color(red: 1.0, green: 0.6, blue: 0.35)
+        case "campfire_invoice": return Color(red: 1.0, green: 0.6, blue: 0.35)   // orange
+        case "campfire_bill": return Color(red: 1.0, green: 0.45, blue: 0.45)     // coral
+        case "campfire_draft", "campfire": return Color(red: 0.85, green: 0.7, blue: 0.4) // amber
         default: return .accentColor
         }
     }
@@ -31,7 +33,9 @@ private enum Glass {
         case "netsuite_je": return "book.closed.fill"
         case "ramp_bill": return "doc.text.fill"
         case "ramp_reimbursement": return "airplane.circle.fill"
-        case "campfire": return "flame.fill"
+        case "campfire_invoice": return "flame.fill"
+        case "campfire_bill": return "tray.full.fill"
+        case "campfire_draft", "campfire": return "flame"
         default: return "questionmark.circle.fill"
         }
     }

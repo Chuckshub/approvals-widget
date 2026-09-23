@@ -29,13 +29,13 @@ For each row from step 1, use its "model" field to pick the shape:
       "currency": "<new_payload.currency, default USD>",
       "created_at": "<the approval's created_at, as ISO8601>",
       "detail": "created by <created_by_name> - due <new_payload.due_date>",
-      "url": null
+      "url": "https://app.meetcampfire.com/v2/approvals"
     }
-  (there is no reliable Campfire deep-link URL for a still-pending draft - leave url null.)
+  (there is no per-record Campfire deep-link for a still-pending draft, so point at the shared approvals inbox instead of leaving url null.)
 
-- model == "accountingbill": emit similarly but source "campfire_bill", title "Bill <new_payload.invoice_number or vendor_name>: <new_payload.vendor_name or client_name>", amount from new_payload.total or summed line amounts (check whether it's already in dollars or cents by comparing magnitude to a sane bill size - Campfire bill payloads are NOT guaranteed to use cents like invoice lines do, so sanity-check before dividing).
+- model == "accountingbill": emit similarly but source "campfire_bill", title "Bill <new_payload.invoice_number or vendor_name>: <new_payload.vendor_name or client_name>", amount from new_payload.total or summed line amounts (check whether it's already in dollars or cents by comparing magnitude to a sane bill size - Campfire bill payloads are NOT guaranteed to use cents like invoice lines do, so sanity-check before dividing), url "https://app.meetcampfire.com/v2/approvals".
 
-- any other model: emit source "campfire_draft", title "<model> #<object_id or id>", amount null unless a top-level total/amount field is obviously in dollars, detail "created by <created_by_name>", url null.
+- any other model: emit source "campfire_draft", title "<model> #<object_id or id>", amount null unless a top-level total/amount field is obviously in dollars, detail "created by <created_by_name>", url "https://app.meetcampfire.com/v2/approvals".
 
 If step 1 returns zero results, emit zero campfire_* items - do not fail out.
 

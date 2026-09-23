@@ -58,8 +58,10 @@ if (( FETCH_RC != 0 )) || ! grep -q 'SNAPSHOT_OK' "$FETCH_OUT"; then
   exit 1
 fi
 
-# Everything before the sentinel line is the JSON payload.
-JSON_TEXT="$(sed '/SNAPSHOT_OK/,$d' "$FETCH_OUT")"
+# Everything before the sentinel line is the JSON payload. The model is told
+# not to wrap it in a markdown fence but occasionally does anyway - strip a
+# ```json / ``` fence defensively rather than fail the whole run over it.
+JSON_TEXT="$(sed '/SNAPSHOT_OK/,$d' "$FETCH_OUT" | sed -E '/^```/d')"
 
 if ! print -r -- "$JSON_TEXT" | python3 -c 'import json,sys; json.load(sys.stdin)' 2>>"$LOG"; then
   say "ERROR: fetch output did not parse as valid JSON - leaving state.json untouched"
